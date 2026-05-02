@@ -10,10 +10,10 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 import Form from "./pages/Form.jsx";
-import aboutImage from "../images/about.png";
-import landingOne from "../images/landing page desktop/homepagefinal.png";
-import landingTwo from "../images/landing page desktop/homepage final2.png";
-import landingThree from "../images/landing page desktop/homepagefinal3.png";
+import aboutImage from "./assets/images/about.png";
+import landingOne from "./assets/images/landing/homepage-final.png";
+import landingTwo from "./assets/images/landing/homepage-final-2.png";
+import landingThree from "./assets/images/landing/homepage-final-3.png";
 import {
   defaultTag,
   getTagValue,
@@ -21,7 +21,9 @@ import {
   predefinedTags,
 } from "./constants/tags.js";
 
-const deskImages = import.meta.glob("../images/*desk*.*", { eager: true });
+const deskImages = import.meta.glob("./assets/images/backgrounds/desktop/*", {
+  eager: true,
+});
 
 const backgrounds = Object.entries(deskImages)
   .map(([path, module]) => ({ src: module.default, path }))
@@ -461,7 +463,7 @@ function App() {
   const [isHeart, setHeart] = useState(false);
   useEffect(() => {
     axios
-      .get("http://localhost:5000/notes")
+      .get("https://nami-production-35f9.up.railway.app/notes")
       .then((response) => setNote(response.data))
       .catch((error) => console.error("Error fetching notes:", error));
   }, []);
@@ -499,7 +501,7 @@ function App() {
   
   const handleFeltCount = async (id, type) => {
     try {
-      const { data } = await axios.patch(`http://localhost:5000/notes/${id}/felt`, { type });
+      const { data } = await axios.patch(`https://nami-production-35f9.up.railway.app/notes/${id}/felt`, { type });
       setFelt(!isfelt);
       setNote((prevNotes) =>
         prevNotes.map((note) => (note._id === id ? data : note))
@@ -511,7 +513,7 @@ function App() {
 
   const handleHeartCount = async (id, type) => {
     try {
-      const { data } = await axios.patch(`http://localhost:5000/notes/${id}/heart`, { type });
+      const { data } = await axios.patch(`https://nami-production-35f9.up.railway.app/notes/${id}/heart`, { type });
       setHeart(!isHeart);
       setNote((prevNotes) =>
         prevNotes.map((note) => (note._id === id ? data : note))

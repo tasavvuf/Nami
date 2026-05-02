@@ -27,7 +27,7 @@ function Form({ onCreated }) {
       setError("");
       setStatus("");
 
-      const { data } = await axios.post("http://localhost:5000/wish", {
+      const { data } = await axios.post("https://nami-production-35f9.up.railway.app/wish", {
         content: trimmedContent,
         tag: trimmedTag,
       });
