@@ -144,6 +144,82 @@ a {
   -webkit-line-clamp: 4;
 }
 
+.about-current {
+  background:
+    linear-gradient(90deg, rgb(2 6 23 / 0.34), rgb(2 6 23 / 0.05) 44%, rgb(2 6 23 / 0.46)),
+    repeating-linear-gradient(
+      115deg,
+      transparent 0 24px,
+      rgb(125 211 252 / 0.08) 24px 25px,
+      transparent 25px 54px
+    );
+  animation: current-drift 18s ease-in-out infinite alternate;
+}
+
+.about-section {
+  animation: about-rise 760ms ease both;
+}
+
+.about-section:nth-of-type(2) {
+  animation-delay: 120ms;
+}
+
+.about-section:nth-of-type(3) {
+  animation-delay: 220ms;
+}
+
+.about-float {
+  animation: soft-float 6s ease-in-out infinite;
+}
+
+.story-line {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: story-arrive 620ms ease forwards;
+}
+
+@keyframes current-drift {
+  from {
+    opacity: 0.55;
+    transform: translate3d(-1.5%, -1%, 0) scale(1.02);
+  }
+
+  to {
+    opacity: 0.82;
+    transform: translate3d(1.5%, 1%, 0) scale(1.05);
+  }
+}
+
+@keyframes about-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes story-arrive {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

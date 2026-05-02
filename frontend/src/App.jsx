@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 import Form from "./pages/Form.jsx";
+import aboutImage from "../images/about.png";
 import landingOne from "../images/landing page desktop/homepagefinal.png";
 import landingTwo from "../images/landing page desktop/homepage final2.png";
 import landingThree from "../images/landing page desktop/homepagefinal3.png";
@@ -48,6 +49,36 @@ const landingPanels = [
     title: "Remember, for us you matter, buddy",
     copy: "- Nami developer (Tasavvuf Gori)",
     align: "items-start text-left",
+  },
+];
+
+const namiStoryLines = [
+  "Some feelings don't need answers.",
+  "They just need somewhere to exist.",
+  "Nami is that place.",
+  "No names.",
+  "No conversations.",
+  "No expectations.",
+  "Just a moment where you can be honest without being seen.",
+  "You write it.",
+  "You let it go.",
+];
+
+const namiMeanings = [
+  { word: "波", roman: "Nami", meaning: "wave" },
+  { word: "涙", roman: "Namida", meaning: "tears" },
+];
+
+const developerLinks = [
+  {
+    label: "Email",
+    value: "tasavvufg@gmail.com",
+    href: "mailto:tasavvufg@gmail.com",
+  },
+  {
+    label: "Instagram",
+    value: "@10.186.21.208",
+    href: "https://www.instagram.com/10.186.21.208/",
   },
 ];
 
@@ -153,11 +184,179 @@ function LandingPage() {
                 >
                   Go to Site
                 </Link>
+                <Link
+                  to="/about"
+                  className="glass-action px-6 text-white/90 hover:border-white/40 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/70"
+                >
+                  About Nami
+                </Link>
               </div>
             )}
           </div>
         </section>
       ))}
+    </main>
+  );
+}
+
+function AboutPage() {
+  return (
+    <main className="relative z-10 min-h-screen overflow-hidden px-4 pt-24 pb-12 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0 about-current" />
+      <div className="pointer-events-none absolute inset-x-0 top-24 h-40 bg-linear-to-b from-cyan-200/10 to-transparent blur-3xl" />
+
+      <div className="relative mx-auto max-w-6xl">
+        <section className="about-section grid min-h-[calc(100dvh-8rem)] items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-3xl">
+            <p className="mb-4 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
+              about the wave
+            </p>
+            <h2 className="text-4xl font-black leading-tight text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] sm:text-6xl lg:text-7xl">
+              A soft place for the words that stayed.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg font-semibold leading-8 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-2xl">
+              Nami was built for the quiet emotional moments that do not ask for
+              replies. It lets a feeling exist, breathe, and move on like water.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="https://github.com/tasavvuf/Nami"
+                target="_blank"
+                rel="noreferrer"
+                className="glass-action px-6 text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+              >
+                Star on GitHub
+              </a>
+              <Link
+                to="/wish"
+                className="glass-action px-6 text-white/90 hover:border-white/40 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                Release a Note
+              </Link>
+            </div>
+          </div>
+
+          <aside className="glass-card about-float rounded-[2rem] p-[1px]">
+            <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+              <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
+              <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                support the project
+              </p>
+              <h3 className="mt-4 text-3xl font-black leading-tight text-white">
+                Give Nami a star if it made you feel a little less alone.
+              </h3>
+              <p className="mt-5 text-base font-semibold leading-7 text-slate-100/75">
+                Stars help this small Indian-built corner of the internet reach
+                more people who need somewhere gentle to put their feelings.
+              </p>
+              <a
+                href="https://github.com/tasavvuf/Nami"
+                target="_blank"
+                rel="noreferrer"
+                className="glass-action mt-7 w-full text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+              >
+                Support on GitHub
+              </a>
+            </div>
+          </aside>
+        </section>
+
+        <section className="about-section py-12">
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+            <article className="glass-card rounded-[2rem] p-[1px]">
+              <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                  what's Nami really
+                </p>
+                <div className="mt-6 grid gap-4">
+                  {namiMeanings.map((item) => (
+                    <div
+                      key={item.word}
+                      className="rounded-[1.35rem] border border-white/15 bg-slate-950/25 p-5 shadow-inner shadow-white/5 backdrop-blur-xl"
+                    >
+                      <p className="text-5xl font-black text-white">
+                        {item.word}
+                      </p>
+                      <p className="mt-3 text-lg font-bold text-cyan-50">
+                        {item.roman}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold uppercase tracking-[0.2em] text-slate-100/60">
+                        {item.meaning}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+
+            <article className="glass-card rounded-[2rem] p-[1px]">
+              <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                  the story
+                </p>
+                <div className="mt-6 space-y-4">
+                  {namiStoryLines.map((line, index) => (
+                    <p
+                      key={line}
+                      className="story-line text-xl font-black leading-relaxed text-white/95 sm:text-2xl"
+                      style={{ animationDelay: `${index * 90}ms` }}
+                    >
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="about-section py-12">
+          <div className="grid gap-5 lg:grid-cols-3">
+            <article className="glass-card rounded-[2rem] p-[1px] lg:col-span-2">
+              <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                  from the developer
+                </p>
+                <h3 className="mt-4 text-3xl font-black leading-tight text-white sm:text-4xl">
+                  Made by Tasavvuf, from India, for feelings that cross every
+                  border.
+                </h3>
+                <p className="mt-5 max-w-3xl text-base font-semibold leading-8 text-slate-100/75 sm:text-lg">
+                  Nami is not trying to solve every sadness. It is trying to
+                  make one honest moment feel possible. That is enough for this
+                  wave to begin.
+                </p>
+              </div>
+            </article>
+
+            <article className="glass-card rounded-[2rem] p-[1px]">
+              <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                  connect
+                </p>
+                <div className="mt-6 grid gap-3">
+                  {developerLinks.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target={link.href.startsWith("http") ? "_blank" : undefined}
+                      rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                      className="rounded-[1.25rem] border border-white/15 bg-white/10 px-4 py-4 font-bold text-white/90 transition hover:border-cyan-100/45 hover:bg-cyan-300/20 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+                    >
+                      <span className="block text-xs uppercase tracking-[0.22em] text-cyan-50/65">
+                        {link.label}
+                      </span>
+                      <span className="mt-1 block break-words text-sm sm:text-base">
+                        {link.value}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
@@ -252,6 +451,7 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isLandingPage = location.pathname === "/";
+  const isAboutPage = location.pathname === "/about";
   const [activeBackground, setActiveBackground] = useState(() =>
     getRandomBackgroundIndex()
   );
@@ -273,7 +473,11 @@ function App() {
     return () => window.clearTimeout(id);
   }, [location.pathname]);
 
-  const background = backgrounds.length ? backgrounds[activeBackground] : null;
+  const background = isAboutPage
+    ? { src: aboutImage }
+    : backgrounds.length
+      ? backgrounds[activeBackground]
+      : null;
   const filteredNotes = Note.filter((note) => {
     const tag = getTagValue(note.tag);
 
@@ -369,6 +573,16 @@ function App() {
               >
                 Add Note
               </NavLink>
+              <NavLink
+                to="/about"
+                className={({ isActive }) =>
+                  `rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                    isActive ? "bg-white/15 text-white" : ""
+                  }`
+                }
+              >
+                About
+              </NavLink>
             </nav>
           </div>
         </header>
@@ -376,6 +590,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route
           path="/site"
           element={
