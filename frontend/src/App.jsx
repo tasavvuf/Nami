@@ -461,6 +461,7 @@ function App() {
   const [activeTagFilter, setActiveTagFilter] = useState("All");
   const [isfelt, setFelt] = useState(false);
   const [isHeart, setHeart] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   useEffect(() => {
     axios
       .get("https://nami-production-35f9.up.railway.app/notes")
@@ -473,6 +474,10 @@ function App() {
     }, 0);
 
     return () => window.clearTimeout(id);
+  }, [location.pathname]);
+  
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   const background = isAboutPage
@@ -586,7 +591,79 @@ function App() {
                 About
               </NavLink>
             </nav>
+
+            <button
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-cyan-200/80"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {isMobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {isMobileMenuOpen && (
+            <nav className="md:hidden border-t border-white/15 bg-slate-950/50 backdrop-blur-xl">
+              <div className="mx-auto max-w-6xl px-4 py-3 space-y-1 sm:px-6 lg:px-8">
+                <NavLink
+                  to="/site"
+                  className={({ isActive }) =>
+                    `block rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "text-slate-200 hover:bg-white/10 hover:text-white"
+                    }`
+                  }
+                >
+                  Notes
+                </NavLink>
+                <NavLink
+                  to="/wish"
+                  className={({ isActive }) =>
+                    `block rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "text-slate-200 hover:bg-white/10 hover:text-white"
+                    }`
+                  }
+                >
+                  Add Note
+                </NavLink>
+                <NavLink
+                  to="/about"
+                  className={({ isActive }) =>
+                    `block rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "text-slate-200 hover:bg-white/10 hover:text-white"
+                    }`
+                  }
+                >
+                  About
+                </NavLink>
+              </div>
+            </nav>
+          )}
         </header>
       )}
 
@@ -605,7 +682,7 @@ function App() {
                   <p className="mb-3 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                   things left unsaid
                   </p>
-                  <h2 className="text-4xl font-black leading-tight tracking-[-0.04em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.35)] sm:text-6xl">
+                  <h2 className="text-3xl font-black leading-tight tracking-[-0.04em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.35)] sm:text-4xl md:text-5xl lg:text-6xl">
                    You couldn't say it. So you left it here.
 
                   </h2>
@@ -615,7 +692,7 @@ function App() {
                   className="mb-7"
                   aria-label="Filter notes by tag"
                 >
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {tagFilters.map((filter) => {
                       const isActive = activeTagFilter === filter;
 
@@ -624,7 +701,7 @@ function App() {
                           key={filter}
                           type="button"
                           onClick={() => setActiveTagFilter(filter)}
-                          className={`rounded-full border px-3 py-2 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-cyan-100/80 sm:px-4 ${
+                          className={`rounded-full border px-2.5 py-1.5 text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-cyan-100/80 sm:px-4 sm:py-2 ${
                             isActive
                               ? "border-cyan-100/55 bg-cyan-200/25 text-white shadow-inner shadow-white/10"
                               : "border-white/15 bg-white/10 text-cyan-50/80 hover:border-white/35 hover:bg-white/15"
