@@ -14,6 +14,7 @@ import aboutImage from "./assets/images/about.png";
 import landingOne from "./assets/images/landing/homepage-final.png";
 import landingTwo from "./assets/images/landing/homepage-final-2.png";
 import landingThree from "./assets/images/landing/homepage-final-3.png";
+import landingMeaning from "./assets/images/misc/homepage-1.5.jpg";
 import {
   defaultTag,
   getTagValue,
@@ -25,7 +26,15 @@ const deskImages = import.meta.glob("./assets/images/backgrounds/desktop/*", {
   eager: true,
 });
 
-const backgrounds = Object.entries(deskImages)
+const mobileImages = import.meta.glob("./assets/images/backgrounds/mobile/*", {
+  eager: true,
+});
+
+const desktopBackgrounds = Object.entries(deskImages)
+  .map(([path, module]) => ({ src: module.default, path }))
+  .sort((a, b) => a.path.localeCompare(b.path));
+
+const mobileBackgrounds = Object.entries(mobileImages)
   .map(([path, module]) => ({ src: module.default, path }))
   .sort((a, b) => a.path.localeCompare(b.path));
 
@@ -39,11 +48,28 @@ const landingPanels = [
     actions: true,
   },
   {
+    image: landingMeaning,
+    eyebrow: "what reactions mean",
+    title: "On Nami, reactions are not likes.",
+    copy: "They are not numbers to chase, and they are not a measure of popularity. Every reaction quietly reminds someone that another human felt something while reading their words.",
+    details: [
+      {
+        label: "Heart",
+        text: "A heart means: This touched me. It is not approval. It is connection.",
+      },
+      {
+        label: "Felt",
+        text: "Felt means: I understand this feeling. Sometimes the only response a person has is that they felt it too.",
+      },
+    ],
+    align: "items-start text-left",
+  },
+  {
     image: landingTwo,
     eyebrow: "you are held here",
     title: "Don't worry, let it upon us",
     copy: "We care about you.",
-    align: "items-end text-right",
+    align: "items-start text-left sm:items-end sm:text-right",
   },
   {
     image: landingThree,
@@ -84,9 +110,58 @@ const developerLinks = [
   },
 ];
 
-function getRandomBackgroundIndex() {
-  if (!backgrounds.length) return 0;
-  return Math.floor(Math.random() * backgrounds.length);
+const updatesHistory = [
+  {
+    version: "v0.2",
+    status: "current version",
+    headline: "Mobile polish, smoother reading, and better reaction handling.",
+    released: "Latest frontend update",
+    shipped: [
+      "Improved the mobile UI so content fits small screens more cleanly, including phones like iPhone 14.",
+      "Refined scrolling behavior so the site feels more natural across touch devices, trackpads, and mouse input.",
+      "Added a new homepage panel that explains what Heart and Felt really mean on Nami.",
+      "Added local persistence for Heart and Felt reactions so the same browser does not react again to the same note.",
+    ],
+    next: [
+      "A special note space from the developer, with a gentle way to send suggestions and feature ideas back.",
+      "A more comforting post-submit experience with better emotional continuity after someone shares a note.",
+      "More quiet improvements to make Nami feel warmer, calmer, and more alive over time.",
+    ],
+  },
+];
+
+const HEART_STORAGE_KEY = "nami-hearted-notes";
+const FELT_STORAGE_KEY = "nami-felt-notes";
+
+function readReactionStorage(key) {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(key);
+    if (!rawValue) {
+      return {};
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === "object" ? parsedValue : {};
+  } catch (error) {
+    console.error(`Error reading ${key} from localStorage:`, error);
+    return {};
+  }
+}
+
+function writeReactionStorage(key, value) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Error writing ${key} to localStorage:`, error);
+  }
 }
 
 function getBackgroundStyle(background) {
@@ -94,11 +169,39 @@ function getBackgroundStyle(background) {
     backgroundImage: `url(${background.src})`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center center",
-    backgroundSize: "100% 100%",
-    width: "100vw",
-    height: "100dvh",
+    backgroundSize: "cover",
+    width: "100%",
+    height: "100%",
     filter: "brightness(1.12) saturate(1.08)",
   };
+}
+
+function useIsMobileViewport() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia(
+      "(max-width: 767px), (pointer: coarse)"
+    );
+    const updateViewport = (event) => setIsMobileViewport(event.matches);
+
+    setIsMobileViewport(mediaQuery.matches);
+    mediaQuery.addEventListener("change", updateViewport);
+
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
+
+  return isMobileViewport;
 }
 
 function HeartIcon() {
@@ -125,22 +228,23 @@ function SparkIcon() {
 
 function LandingPage() {
   return (
-    <main className="relative z-10 h-dvh snap-y snap-mandatory overflow-y-auto scroll-smooth bg-[#07111f]">
+    <main className="relative z-10 min-h-screen w-full max-w-full bg-[#07111f]">
       <div className="fixed left-0 top-0 z-30 w-full">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3 select-none">
-            <h1 className="bg-linear-to-r from-white via-cyan-100 to-sky-300 bg-clip-text text-2xl font-black tracking-tight text-transparent drop-shadow-[0_8px_26px_rgba(125,211,252,0.35)]">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5 select-none sm:gap-3">
+            <h1 className="shrink-0 bg-linear-to-r from-white via-cyan-100 to-sky-300 bg-clip-text text-xl font-black tracking-tight text-transparent drop-shadow-[0_8px_26px_rgba(125,211,252,0.35)] sm:text-2xl">
               Nami
             </h1>
-            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.28em] text-cyan-50/80 shadow-inner shadow-white/10 backdrop-blur-xl">
+            <span className="hidden rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.22em] text-cyan-50/80 shadow-inner shadow-white/10 backdrop-blur-xl min-[390px]:inline-flex sm:px-3 sm:text-xs sm:tracking-[0.28em]">
               ( 波 )
             </span>
           </Link>
           <Link
             to="/site"
-            className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white/90 shadow-lg shadow-cyan-950/20 backdrop-blur-xl transition hover:border-cyan-100/45 hover:bg-cyan-300/20 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+            className="shrink-0 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white/90 shadow-lg shadow-cyan-950/20 backdrop-blur-xl transition hover:border-cyan-100/45 hover:bg-cyan-300/20 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 sm:px-4 sm:text-sm"
           >
-            Go to Site
+            <span className="sm:hidden">Enter</span>
+            <span className="hidden sm:inline">Go to Site</span>
           </Link>
         </div>
       </div>
@@ -148,7 +252,7 @@ function LandingPage() {
       {landingPanels.map((panel, index) => (
         <section
           key={panel.title}
-          className="relative flex min-h-dvh snap-start overflow-hidden px-4 py-24 sm:px-6 lg:px-8"
+          className="relative flex min-h-[100svh] overflow-hidden px-4 py-22 sm:min-h-dvh sm:px-6 sm:py-24 lg:px-8"
         >
           <img
             src={panel.image}
@@ -160,20 +264,38 @@ function LandingPage() {
           <div className="noise-layer" />
 
           <div
-            className={`relative mx-auto flex min-h-[calc(100dvh-12rem)] w-full max-w-6xl flex-col justify-center ${panel.align}`}
+            className={`relative mx-auto flex min-h-[calc(100svh-9rem)] w-full max-w-6xl min-w-0 flex-col justify-center ${panel.align} sm:min-h-[calc(100dvh-12rem)]`}
           >
             <p className="mb-4 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
               {panel.eyebrow}
             </p>
-            <h2 className="max-w-3xl text-4xl font-black leading-tight text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] sm:text-6xl lg:text-7xl">
+            <h2 className="max-w-3xl break-words text-[clamp(2rem,9vw,4.5rem)] font-black leading-[0.98] tracking-[-0.05em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] lg:text-7xl">
               {panel.title}
             </h2>
-            <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-2xl">
+            <p className="mt-5 max-w-2xl text-[15px] font-semibold leading-7 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-2xl sm:leading-8">
               {panel.copy}
             </p>
 
+            {panel.details && (
+              <div className="mt-6 grid w-full max-w-3xl gap-3 sm:grid-cols-2">
+                {panel.details.map((detail) => (
+                  <div
+                    key={detail.label}
+                    className="rounded-[1.35rem] border border-white/15 bg-white/10 px-4 py-4 shadow-lg shadow-cyan-950/20 backdrop-blur-xl sm:px-5"
+                  >
+                    <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-50/90">
+                      {detail.label}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold leading-7 text-slate-100/85 sm:text-base">
+                      {detail.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {panel.actions && (
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row">
                 <Link
                   to="/wish"
                   className="glass-action px-6 text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
@@ -203,20 +325,20 @@ function LandingPage() {
 
 function AboutPage() {
   return (
-    <main className="relative z-10 min-h-screen overflow-hidden px-4 pt-24 pb-12 sm:px-6 lg:px-8">
+    <main className="relative z-10 min-h-screen w-full max-w-full overflow-x-hidden px-3 pt-24 pb-12 sm:px-6 lg:px-8">
       <div className="pointer-events-none absolute inset-0 about-current" />
       <div className="pointer-events-none absolute inset-x-0 top-24 h-40 bg-linear-to-b from-cyan-200/10 to-transparent blur-3xl" />
 
-      <div className="relative mx-auto max-w-6xl">
-        <section className="about-section grid min-h-[calc(100dvh-8rem)] items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="max-w-3xl">
+      <div className="relative mx-auto w-full max-w-6xl min-w-0">
+        <section className="about-section grid min-h-[calc(100svh-7rem)] items-center gap-6 sm:gap-8 lg:min-h-[calc(100dvh-8rem)] lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="min-w-0 max-w-3xl">
             <p className="mb-4 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
               about the wave
             </p>
-            <h2 className="text-4xl font-black leading-tight text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] sm:text-6xl lg:text-7xl">
+            <h2 className="break-words text-[clamp(2.2rem,9vw,4.5rem)] font-black leading-[1.02] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] lg:text-7xl">
               A soft place for the words that stayed.
             </h2>
-            <p className="mt-6 max-w-2xl text-lg font-semibold leading-8 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-2xl">
+            <p className="mt-6 max-w-2xl text-base font-semibold leading-7 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-2xl sm:leading-8">
               Nami was built for the quiet emotional moments that do not ask for
               replies. It lets a feeling exist, breathe, and move on like water.
             </p>
@@ -238,13 +360,13 @@ function AboutPage() {
             </div>
           </div>
 
-          <aside className="glass-card about-float rounded-[2rem] p-[1px]">
+          <aside className="glass-card about-float min-w-0 rounded-[2rem] p-[1px]">
             <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
               <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
               <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
                 support the project
               </p>
-              <h3 className="mt-4 text-3xl font-black leading-tight text-white">
+              <h3 className="mt-4 break-words text-2xl font-black leading-tight text-white sm:text-3xl">
                 Give Nami a star if it made you feel a little less alone.
               </h3>
               <p className="mt-5 text-base font-semibold leading-7 text-slate-100/75">
@@ -264,7 +386,7 @@ function AboutPage() {
         </section>
 
         <section className="about-section py-12">
-          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="grid gap-4 sm:gap-5 lg:grid-cols-[0.8fr_1.2fr]">
             <article className="glass-card rounded-[2rem] p-[1px]">
               <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
                 <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
@@ -276,7 +398,7 @@ function AboutPage() {
                       key={item.word}
                       className="rounded-[1.35rem] border border-white/15 bg-slate-950/25 p-5 shadow-inner shadow-white/5 backdrop-blur-xl"
                     >
-                      <p className="text-5xl font-black text-white">
+                      <p className="break-words text-4xl font-black text-white sm:text-5xl">
                         {item.word}
                       </p>
                       <p className="mt-3 text-lg font-bold text-cyan-50">
@@ -300,7 +422,7 @@ function AboutPage() {
                   {namiStoryLines.map((line, index) => (
                     <p
                       key={line}
-                      className="story-line text-xl font-black leading-relaxed text-white/95 sm:text-2xl"
+                      className="story-line break-words text-lg font-black leading-relaxed text-white/95 sm:text-2xl"
                       style={{ animationDelay: `${index * 90}ms` }}
                     >
                       {line}
@@ -313,13 +435,13 @@ function AboutPage() {
         </section>
 
         <section className="about-section py-12">
-          <div className="grid gap-5 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
             <article className="glass-card rounded-[2rem] p-[1px] lg:col-span-2">
               <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
                 <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
                   from the developer
                 </p>
-                <h3 className="mt-4 text-3xl font-black leading-tight text-white sm:text-4xl">
+                <h3 className="mt-4 break-words text-2xl font-black leading-tight text-white sm:text-4xl">
                   Made by Tasavvuf, from India, for feelings that cross every
                   border.
                 </h3>
@@ -363,9 +485,125 @@ function AboutPage() {
   );
 }
 
-function NoteReader({ notes, onHeart, onFelt, isHeart, isfelt }) {
+function UpdatesPage() {
+  return (
+    <main className="relative z-10 min-h-screen w-full max-w-full overflow-x-hidden px-3 pt-24 pb-12 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-x-0 top-24 h-40 bg-linear-to-b from-cyan-200/10 to-transparent blur-3xl" />
+
+      <div className="relative mx-auto w-full max-w-6xl min-w-0">
+        <section className="about-section w-full max-w-3xl min-w-0">
+          <p className="mb-4 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
+            update log
+          </p>
+          <h2 className="break-words text-[clamp(2.2rem,9vw,4.5rem)] font-black leading-[1.02] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.42)] lg:text-7xl">
+            What&apos;s changing in Nami.
+          </h2>
+          <p className="mt-6 max-w-2xl text-base font-semibold leading-7 text-slate-100/85 drop-shadow-[0_10px_24px_rgba(2,6,23,0.38)] sm:text-xl sm:leading-8">
+            A quiet place to keep track of what has been improved, what has
+            been added, and what is gently coming next.
+          </p>
+        </section>
+
+        <section className="about-section mt-10 grid gap-6">
+          {updatesHistory.map((update) => (
+            <article
+              key={update.version}
+              className="glass-card rounded-[2rem] p-[1px]"
+            >
+              <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-6 sm:p-8">
+                <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
+
+                <div className="relative flex min-w-0 flex-col gap-4 border-b border-white/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                      {update.status}
+                    </p>
+                    <h3 className="mt-3 break-words text-2xl font-black leading-tight text-white sm:text-4xl">
+                      {update.version}
+                    </h3>
+                    <p className="mt-3 max-w-2xl text-base font-semibold leading-7 text-slate-100/80">
+                      {update.headline}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-100/60">
+                    {update.released}
+                  </p>
+                </div>
+
+                <div className="relative mt-6 grid gap-4 sm:gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+                  <section className="min-w-0 rounded-[1.5rem] border border-white/15 bg-slate-950/20 p-4 backdrop-blur-xl sm:p-5">
+                    <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-50/85">
+                      Included Now
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      {update.shipped.map((item) => (
+                        <div
+                          key={item}
+                          className="rounded-[1.1rem] border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold leading-7 text-slate-100/85"
+                        >
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="min-w-0 rounded-[1.5rem] border border-white/15 bg-slate-950/20 p-4 backdrop-blur-xl sm:p-5">
+                    <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-50/85">
+                      Coming Soon
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      {update.next.map((item) => (
+                        <div
+                          key={item}
+                          className="rounded-[1.1rem] border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold leading-7 text-slate-100/78"
+                        >
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function NoteReader({
+  notes,
+  onHeart,
+  onFelt,
+  heartedNotes,
+  feltNotes,
+  isLoading,
+}) {
   const { id } = useParams();
   const note = notes.find((item) => item._id === id);
+  const hasHearted = Boolean(id && heartedNotes[id]);
+  const hasFelt = Boolean(id && feltNotes[id]);
+
+  if (isLoading) {
+    return (
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-4 pt-24 pb-10 sm:px-6 lg:px-8">
+        <section className="glass-card max-w-xl rounded-[2rem] p-[1px] text-center">
+          <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-8">
+            <div className="loading-shimmer pointer-events-none absolute inset-0 opacity-60" />
+            <div className="relative">
+              <p className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                Loading note
+              </p>
+              <h2 className="text-3xl font-black text-white">
+                Finding this message in the wave.
+              </h2>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (!note) {
     return (
@@ -391,7 +629,7 @@ function NoteReader({ notes, onHeart, onFelt, isHeart, isfelt }) {
   }
 
   return (
-    <main className="relative z-10 min-h-screen px-4 pt-24 pb-10 sm:px-6 lg:px-8">
+    <main className="relative z-10 min-h-screen w-full max-w-full px-3 pt-24 pb-10 sm:px-6 lg:px-8">
       <article className="glass-card mx-auto max-w-4xl rounded-[2.25rem] p-[1px]">
         <div className="glass-card-inner relative overflow-hidden rounded-[2.2rem] p-6 sm:p-9 lg:p-12">
           <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
@@ -421,22 +659,24 @@ function NoteReader({ notes, onHeart, onFelt, isHeart, isfelt }) {
             </Link>
           </div>
 
-          <p className="relative whitespace-pre-wrap break-words text-2xl font-black leading-relaxed text-white/95 drop-shadow-[0_2px_16px_rgba(2,6,23,0.28)] sm:text-3xl">
+          <p className="relative whitespace-pre-wrap break-words text-xl font-black leading-relaxed text-white/95 drop-shadow-[0_2px_16px_rgba(2,6,23,0.28)] sm:text-3xl">
             {note.content}
           </p>
 
-          <div className="relative mt-10 grid max-w-md grid-cols-2 gap-3 border-t border-white/15 pt-5">
+          <div className="relative mt-10 grid max-w-full grid-cols-2 gap-3 border-t border-white/15 pt-5 sm:max-w-md">
             <button
-              className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80"
-              onClick={() => onHeart(note._id, isHeart ? "dislike" : "like")}
+              className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+              onClick={() => onHeart(note)}
+              disabled={hasHearted}
               aria-label={`Heart note. Current count ${note.heartcount}`}
             >
               <HeartIcon />
               <span>{note.heartcount}</span>
             </button>
             <button
-              className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
-              onClick={() => onFelt(note._id, isfelt ? "dislike" : "like")}
+              className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+              onClick={() => onFelt(note)}
+              disabled={hasFelt}
               aria-label={`Felt note. Current count ${note.feltCount}`}
             >
               <SparkIcon />
@@ -452,38 +692,75 @@ function NoteReader({ notes, onHeart, onFelt, isHeart, isfelt }) {
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobileViewport = useIsMobileViewport();
   const isLandingPage = location.pathname === "/";
   const isAboutPage = location.pathname === "/about";
-  const [activeBackground, setActiveBackground] = useState(() =>
-    getRandomBackgroundIndex()
-  );
+  const currentBackgrounds = isMobileViewport
+    ? mobileBackgrounds
+    : desktopBackgrounds;
+  const [activeBackground, setActiveBackground] = useState(0);
   const [Note, setNote] = useState([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
   const [activeTagFilter, setActiveTagFilter] = useState("All");
-  const [isfelt, setFelt] = useState(false);
-  const [isHeart, setHeart] = useState(false);
+  const [heartedNotes, setHeartedNotes] = useState(() =>
+    readReactionStorage(HEART_STORAGE_KEY)
+  );
+  const [feltNotes, setFeltNotes] = useState(() =>
+    readReactionStorage(FELT_STORAGE_KEY)
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   useEffect(() => {
+    writeReactionStorage(HEART_STORAGE_KEY, heartedNotes);
+  }, [heartedNotes]);
+
+  useEffect(() => {
+    writeReactionStorage(FELT_STORAGE_KEY, feltNotes);
+  }, [feltNotes]);
+
+  useEffect(() => {
+    setIsLoadingNotes(true);
     axios
       .get("https://nami-production-35f9.up.railway.app/notes")
       .then((response) => setNote(response.data))
-      .catch((error) => console.error("Error fetching notes:", error));
+      .catch((error) => console.error("Error fetching notes:", error))
+      .finally(() => setIsLoadingNotes(false));
   }, []);
+
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setActiveBackground(getRandomBackgroundIndex());
+      if (!currentBackgrounds.length) {
+        setActiveBackground(0);
+        return;
+      }
+
+      setActiveBackground(
+        Math.floor(Math.random() * currentBackgrounds.length)
+      );
     }, 0);
 
     return () => window.clearTimeout(id);
-  }, [location.pathname]);
-  
+  }, [currentBackgrounds.length, location.pathname]);
+
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  }, [location.pathname]);
+
   const background = isAboutPage
     ? { src: aboutImage }
-    : backgrounds.length
-      ? backgrounds[activeBackground]
+    : currentBackgrounds.length
+      ? currentBackgrounds[activeBackground]
       : null;
   const filteredNotes = Note.filter((note) => {
     const tag = getTagValue(note.tag);
@@ -504,24 +781,46 @@ function App() {
   });
   const tagFilters = ["All", ...predefinedTags, "Other"];
   
-  const handleFeltCount = async (id, type) => {
+  const handleFeltCount = async (note) => {
+    if (!note?._id || feltNotes[note._id]) {
+      return;
+    }
+
+    if ((note.feltCount ?? 0) < 0) {
+      return;
+    }
+
     try {
-      const { data } = await axios.patch(`https://nami-production-35f9.up.railway.app/notes/${id}/felt`, { type });
-      setFelt(!isfelt);
+      const { data } = await axios.patch(
+        `https://nami-production-35f9.up.railway.app/notes/${note._id}/felt`,
+        { type: "like" }
+      );
+      setFeltNotes((prev) => ({ ...prev, [note._id]: true }));
       setNote((prevNotes) =>
-        prevNotes.map((note) => (note._id === id ? data : note))
+        prevNotes.map((item) => (item._id === note._id ? data : item))
       );
     } catch (error) {
       console.error("Error updating felt count:", error);
     }
   };
 
-  const handleHeartCount = async (id, type) => {
+  const handleHeartCount = async (note) => {
+    if (!note?._id || heartedNotes[note._id]) {
+      return;
+    }
+
+    if ((note.heartcount ?? 0) < 0) {
+      return;
+    }
+
     try {
-      const { data } = await axios.patch(`https://nami-production-35f9.up.railway.app/notes/${id}/heart`, { type });
-      setHeart(!isHeart);
+      const { data } = await axios.patch(
+        `https://nami-production-35f9.up.railway.app/notes/${note._id}/heart`,
+        { type: "like" }
+      );
+      setHeartedNotes((prev) => ({ ...prev, [note._id]: true }));
       setNote((prevNotes) =>
-        prevNotes.map((note) => (note._id === id ? data : note))
+        prevNotes.map((item) => (item._id === note._id ? data : item))
       );
     } catch (error) {
       console.error("Error updating heart count:", error);
@@ -529,9 +828,12 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#07111f] text-white antialiased">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#07111f] text-white antialiased">
       {!isLandingPage && (
-        <div className="fixed inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="pointer-events-none fixed inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
           {background && (
             <div
               key={background.src}
@@ -549,12 +851,12 @@ function App() {
 
       {!isLandingPage && (
         <header className="fixed left-0 top-0 z-50 w-full border-b border-white/15 bg-slate-950/25 shadow-[0_18px_60px_rgba(2,6,23,0.28)] backdrop-blur-xl">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <Link to="/" className="flex items-center gap-3 select-none">
-              <h1 className="bg-linear-to-r from-white via-cyan-100 to-sky-300 bg-clip-text text-2xl font-black tracking-tight text-transparent drop-shadow-[0_8px_26px_rgba(125,211,252,0.35)]">
+          <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+            <Link to="/" className="flex min-w-0 items-center gap-2.5 select-none sm:gap-3">
+              <h1 className="shrink-0 bg-linear-to-r from-white via-cyan-100 to-sky-300 bg-clip-text text-xl font-black tracking-tight text-transparent drop-shadow-[0_8px_26px_rgba(125,211,252,0.35)] sm:text-2xl">
                 Nami
               </h1>
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.28em] text-cyan-50/80 shadow-inner shadow-white/10 backdrop-blur-xl">
+              <span className="hidden rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.22em] text-cyan-50/80 shadow-inner shadow-white/10 backdrop-blur-xl min-[390px]:inline-flex sm:px-3 sm:text-xs sm:tracking-[0.28em]">
                 ( 波 )
               </span>
             </Link>
@@ -590,10 +892,20 @@ function App() {
               >
                 About
               </NavLink>
+              <NavLink
+                to="/updates"
+                className={({ isActive }) =>
+                  `rounded-full px-4 py-2 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                    isActive ? "bg-white/15 text-white" : ""
+                  }`
+                }
+              >
+                Updates
+              </NavLink>
             </nav>
 
             <button
-              className="md:hidden flex items-center justify-center w-10 h-10 rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-cyan-200/80"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-cyan-200/80 md:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -624,7 +936,7 @@ function App() {
 
           {isMobileMenuOpen && (
             <nav className="md:hidden border-t border-white/15 bg-slate-950/50 backdrop-blur-xl">
-              <div className="mx-auto max-w-6xl px-4 py-3 space-y-1 sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-6xl space-y-1 px-4 py-3 sm:px-6 lg:px-8">
                 <NavLink
                   to="/site"
                   className={({ isActive }) =>
@@ -661,6 +973,18 @@ function App() {
                 >
                   About
                 </NavLink>
+                <NavLink
+                  to="/updates"
+                  className={({ isActive }) =>
+                    `block rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-cyan-200/80 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "text-slate-200 hover:bg-white/10 hover:text-white"
+                    }`
+                  }
+                >
+                  Updates
+                </NavLink>
               </div>
             </nav>
           )}
@@ -670,19 +994,20 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/updates" element={<UpdatesPage />} />
         <Route
           path="/site"
           element={
             <main
               id="notes"
-              className="relative z-10 min-h-screen px-4 pt-24 pb-10 sm:px-6 lg:px-8"
+              className="relative z-10 min-h-screen w-full max-w-full px-3 pt-24 pb-10 sm:px-6 lg:px-8"
             >
-              <div className="mx-auto max-w-6xl">
-                <section className="mb-8 max-w-2xl">
+              <div className="mx-auto w-full max-w-6xl min-w-0">
+                <section className="mb-8 min-w-0 max-w-2xl">
                   <p className="mb-3 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                   things left unsaid
                   </p>
-                  <h2 className="text-3xl font-black leading-tight tracking-[-0.04em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.35)] sm:text-4xl md:text-5xl lg:text-6xl">
+                  <h2 className="break-words text-[clamp(2rem,8vw,4rem)] font-black leading-tight tracking-[-0.04em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.35)] lg:text-6xl">
                    You couldn't say it. So you left it here.
 
                   </h2>
@@ -714,83 +1039,99 @@ function App() {
                   </div>
                 </section>
 
-                <div className="grid auto-rows-max grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredNotes.map((note) => (
-                    <article
-                      key={note._id}
-                      role="button"
-                      tabIndex={0}
-                      className="glass-card group flex h-fit min-h-52 cursor-pointer flex-col gap-5 rounded-[1.75rem] p-[1px] focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
-                      onClick={() => navigate(`/notes/${note._id}`)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          navigate(`/notes/${note._id}`);
-                        }
-                      }}
-                    >
-                      <div className="glass-card-inner relative flex min-h-52 flex-1 flex-col justify-between overflow-hidden rounded-[1.7rem] p-5 sm:p-6">
-                        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
-                        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl transition duration-300 group-hover:bg-cyan-200/30" />
-
-                        <div className="relative flex-1">
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <span className="w-fit rounded-full border border-cyan-100/25 bg-cyan-100/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-50 shadow-inner shadow-white/10">
-                              {note.tag}
-                            </span>
-                            <time
-                              className="text-xs font-medium text-slate-100/65"
-                              dateTime={note.createdAt}
-                            >
-                              {new Date(note.createdAt).toLocaleDateString(
-                                undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )}
-                            </time>
-                          </div>
-                          <p className="note-preview break-words text-lg font-bold leading-relaxed text-white/95 drop-shadow-[0_2px_16px_rgba(2,6,23,0.28)]">
-                            {note.content}
-                          </p>
-                        </div>
-
-                        <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/15 pt-4">
-                          <button
-                            className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleHeartCount(
-                                note._id,
-                                isHeart ? "dislike" : "like"
-                              );
-                            }}
-                            aria-label={`Heart note. Current count ${note.heartcount}`}
-                          >
-                            <HeartIcon />
-                            <span>{note.heartcount}</span>
-                          </button>
-                          <button
-                            className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleFeltCount(
-                                note._id,
-                                isfelt ? "dislike" : "like"
-                              );
-                            }}
-                            aria-label={`Felt note. Current count ${note.feltCount}`}
-                          >
-                            <SparkIcon />
-                            <span>{note.feltCount}</span>
-                          </button>
-                        </div>
+                {isLoadingNotes ? (
+                  <section className="glass-card rounded-[1.75rem] p-[1px]">
+                    <div className="glass-card-inner relative overflow-hidden rounded-[1.7rem] p-6 sm:p-8">
+                      <div className="loading-shimmer pointer-events-none absolute inset-0 opacity-60" />
+                      <div className="relative">
+                        <p className="text-sm font-bold uppercase tracking-[0.24em] text-cyan-50/75">
+                          loading notes
+                        </p>
+                        <h3 className="mt-3 text-2xl font-black text-white sm:text-3xl">
+                          Bringing the latest wishes into view.
+                        </h3>
+                        <p className="mt-3 max-w-2xl text-base font-medium leading-7 text-slate-100/75">
+                          The layout is reserved so the screen stays calm on
+                          mobile while content arrives.
+                        </p>
                       </div>
-                    </article>
-                  ))}
-                </div>
+                    </div>
+                  </section>
+                ) : (
+                  <div className="grid auto-rows-max grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredNotes.map((note) => (
+                      <article
+                        key={note._id}
+                        role="button"
+                        tabIndex={0}
+                        className="glass-card group flex min-w-0 h-fit min-h-52 cursor-pointer flex-col gap-5 rounded-[1.75rem] p-[1px] focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+                        onClick={() => navigate(`/notes/${note._id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            navigate(`/notes/${note._id}`);
+                          }
+                        }}
+                      >
+                        <div className="glass-card-inner relative flex min-h-52 min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[1.7rem] p-4 sm:p-6">
+                          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
+                          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl transition duration-300 group-hover:bg-cyan-200/30" />
+
+                          <div className="relative min-w-0 flex-1">
+                            <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
+                              <span className="w-fit rounded-full border border-cyan-100/25 bg-cyan-100/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-50 shadow-inner shadow-white/10">
+                                {note.tag}
+                              </span>
+                              <time
+                                className="text-xs font-medium text-slate-100/65"
+                                dateTime={note.createdAt}
+                              >
+                                {new Date(note.createdAt).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  }
+                                )}
+                              </time>
+                            </div>
+                            <p className="note-preview break-words text-base font-bold leading-7 text-white/95 drop-shadow-[0_2px_16px_rgba(2,6,23,0.28)] sm:text-lg sm:leading-relaxed">
+                              {note.content}
+                            </p>
+                          </div>
+
+                          <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/15 pt-4">
+                            <button
+                              className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleHeartCount(note);
+                              }}
+                              disabled={Boolean(heartedNotes[note._id])}
+                              aria-label={`Heart note. Current count ${note.heartcount}`}
+                            >
+                              <HeartIcon />
+                              <span>{note.heartcount}</span>
+                            </button>
+                            <button
+                              className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleFeltCount(note);
+                              }}
+                              disabled={Boolean(feltNotes[note._id])}
+                              aria-label={`Felt note. Current count ${note.feltCount}`}
+                            >
+                              <SparkIcon />
+                              <span>{note.feltCount}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
 
                 {!filteredNotes.length && (
                   <section className="glass-card mt-6 rounded-[1.75rem] p-[1px]">
@@ -812,15 +1153,16 @@ function App() {
               notes={Note}
               onHeart={handleHeartCount}
               onFelt={handleFeltCount}
-              isHeart={isHeart}
-              isfelt={isfelt}
+              heartedNotes={heartedNotes}
+              feltNotes={feltNotes}
+              isLoading={isLoadingNotes}
             />
           }
         />
         <Route
           path="/wish"
           element={
-            <main className="relative z-10 min-h-screen px-4 pt-24 pb-10 sm:px-6 lg:px-8">
+            <main className="relative z-10 min-h-screen w-full max-w-full px-3 pt-24 pb-10 sm:px-6 lg:px-8">
               <Form onCreated={(newNote) => setNote((notes) => [newNote, ...notes])} />
             </main>
           }
