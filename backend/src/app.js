@@ -1,5 +1,6 @@
 import express from 'express';
 import { noteModel} from "./model/note.model.js";
+import mongoose from "mongoose";
 const app = express()
 app.use(express.json())
 // add cors
@@ -10,7 +11,43 @@ app.get("/",(_,res)=>{
 })
     app.get("/notes",async(req,res)=>{
     try {
-        const notes = await noteModel.find()
+        const { tag, limit, random, excludeId } = req.query
+        const trimmedTag = typeof tag === "string" ? tag.trim() : ""
+        const parsedLimit = Number.parseInt(limit, 10)
+        const hasLimit = Number.isInteger(parsedLimit) && parsedLimit > 0
+        const shouldRandomize = random === "true"
+        const filters = {}
+
+        if (trimmedTag) {
+            filters.tag = trimmedTag
+        }
+
+        if (typeof excludeId === "string" && excludeId.trim()) {
+            if (!mongoose.Types.ObjectId.isValid(excludeId)) {
+                return res.status(400).json({ message: "invalid excludeId" })
+            }
+
+            filters._id = { $ne: new mongoose.Types.ObjectId(excludeId) }
+        }
+
+        let notes
+
+        if (shouldRandomize) {
+            const sampleSize = hasLimit ? parsedLimit : 1
+            notes = await noteModel.aggregate([
+                { $match: filters },
+                { $sample: { size: sampleSize } },
+            ])
+        } else {
+            let query = noteModel.find(filters)
+
+            if (hasLimit) {
+                query = query.limit(parsedLimit)
+            }
+
+            notes = await query
+        }
+
         res.status(200).json(notes)
     } catch (error) {
         res.status(500).json({message : "something went wrong"})
