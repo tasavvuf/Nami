@@ -986,6 +986,43 @@ function SimilarNoteResult({
   );
 }
 
+function NotFoundPage() {
+  return (
+    <main className="relative z-10 min-h-screen w-full max-w-full px-3 pt-24 pb-10 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-5xl items-center justify-center px-4 py-20 sm:px-6 lg:px-8">
+        <section className="glass-card max-w-3xl rounded-[2rem] p-[1px]">
+          <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-8 sm:p-10">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/75">
+              page not found
+            </p>
+            <h1 className="break-words text-[clamp(2.8rem,7vw,5rem)] font-black leading-[0.96] tracking-[-0.05em] text-white sm:text-[clamp(3rem,6vw,5.5rem)]">
+              This page drifted away.
+            </h1>
+            <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-slate-100/80 sm:text-lg">
+              The route you tried to visit doesn't exist here. Head back to the calm side of Nami and continue leaving quiet notes.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                to="/"
+                className="glass-action px-6 text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+              >
+                Return home
+              </Link>
+              <Link
+                to="/site"
+                className="glass-action px-6 text-white/90 hover:border-white/40 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                View notes
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1466,6 +1503,7 @@ function App() {
             </main>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   );
