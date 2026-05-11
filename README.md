@@ -57,6 +57,20 @@ The backend runs on `http://localhost:5000` by default.
 | `PATCH` | `/notes/:id/felt` | Add or remove a felt reaction |
 | `PATCH` | `/notes/:id/heart` | Add or remove a heart reaction |
 
+## Updates
+
+### v0.3
+- Added same-tag note suggestion after submit
+- Updated form component styling and added homepage image asset
+- Enhanced glass-morphism design and added loading animations
+- Added update showcase section and loading state to home page
+- Updated frontend dependencies and main entry point
+- Made app partially responsive (images to be worked on later)
+- Updated frontend API endpoints to Railway production server
+- Added Railway backend service configuration and start script
+- Added about page
+- Kept app workspaces clean
+
 ## Environment
 
 Create a backend `.env` file with:

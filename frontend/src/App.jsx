@@ -8,7 +8,6 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import axios from "axios";
 import Form from "./pages/Form.jsx";
 import aboutImage from "./assets/images/about.png";
 import landingOne from "./assets/images/landing/homepage-final.png";
@@ -21,6 +20,7 @@ import {
   isPredefinedTag,
   predefinedTags,
 } from "./constants/tags.js";
+import { api } from "./lib/api.js";
 
 const deskImages = import.meta.glob("./assets/images/backgrounds/desktop/*", {
   eager: true,
@@ -112,10 +112,32 @@ const developerLinks = [
 
 const updatesHistory = [
   {
-    version: "v0.2",
+    version: "v0.3",
     status: "current version",
-    headline: "Mobile polish, smoother reading, and better reaction handling.",
+    headline: "Enhanced user experience with new features and improvements.",
     released: "Latest frontend update",
+    shipped: [
+      "Added same-tag note suggestion after submit for better continuity.",
+      "Updated form component styling and added homepage image asset.",
+      "Enhanced glass-morphism design and added loading animations.",
+      "Added update showcase section and loading state to home page.",
+      "Updated frontend dependencies and main entry point.",
+      "Made app partially responsive (images to be worked on later).",
+      "Updated frontend API endpoints to Railway production server.",
+      "Added Railway backend service configuration and start script.",
+      "Added about page.",
+      "Kept app workspaces clean.",
+    ],
+    next: [
+      "Further responsiveness improvements for images.",
+      "More quiet enhancements to make Nami even warmer and calmer.",
+    ],
+  },
+  {
+    version: "v0.2",
+    status: "previous version",
+    headline: "Mobile polish, smoother reading, and better reaction handling.",
+    released: "Previous update",
     shipped: [
       "Improved the mobile UI so content fits small screens more cleanly, including phones like iPhone 14.",
       "Refined scrolling behavior so the site feels more natural across touch devices, trackpads, and mouse input.",
@@ -195,7 +217,6 @@ function useIsMobileViewport() {
     );
     const updateViewport = (event) => setIsMobileViewport(event.matches);
 
-    setIsMobileViewport(mediaQuery.matches);
     mediaQuery.addEventListener("change", updateViewport);
 
     return () => mediaQuery.removeEventListener("change", updateViewport);
@@ -223,6 +244,59 @@ function SparkIcon() {
         d="M11.2 2.6a.9.9 0 0 1 1.6 0l1.85 4.06a.9.9 0 0 0 .45.45l4.3 2.02a.9.9 0 0 1 0 1.62l-4.3 2.02a.9.9 0 0 0-.45.45l-1.85 4.06a.9.9 0 0 1-1.6 0l-1.85-4.06a.9.9 0 0 0-.45-.45L4.6 10.75a.9.9 0 0 1 0-1.62l4.3-2.02a.9.9 0 0 0 .45-.45L11.2 2.6Zm7.25 12.58a.68.68 0 0 1 1.22 0l.55 1.18a.68.68 0 0 0 .33.33l1.18.55a.68.68 0 0 1 0 1.22l-1.18.55a.68.68 0 0 0-.33.33l-.55 1.18a.68.68 0 0 1-1.22 0l-.55-1.18a.68.68 0 0 0-.33-.33l-1.18-.55a.68.68 0 0 1 0-1.22l1.18-.55a.68.68 0 0 0 .33-.33l.55-1.18Z"
       />
     </svg>
+  );
+}
+
+function NoteActionButtons({
+  note,
+  onHeart,
+  onFelt,
+  heartedNotes,
+  feltNotes,
+  onUpdated,
+  className = "",
+}) {
+  const noteId = note?._id;
+
+  const handleHeartClick = async (event) => {
+    event.stopPropagation();
+    const updatedNote = await onHeart(note);
+    if (updatedNote) {
+      onUpdated?.(updatedNote);
+    }
+  };
+
+  const handleFeltClick = async (event) => {
+    event.stopPropagation();
+    const updatedNote = await onFelt(note);
+    if (updatedNote) {
+      onUpdated?.(updatedNote);
+    }
+  };
+
+  return (
+    <div
+      className={`relative grid max-w-full grid-cols-2 gap-3 border-t border-white/15 pt-4 ${className}`}
+    >
+      <button
+        className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+        onClick={handleHeartClick}
+        disabled={Boolean(noteId && heartedNotes[noteId])}
+        aria-label={`Heart note. Current count ${note?.heartcount ?? 0}`}
+      >
+        <HeartIcon />
+        <span>{note?.heartcount ?? 0}</span>
+      </button>
+      <button
+        className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 disabled:cursor-not-allowed disabled:opacity-55"
+        onClick={handleFeltClick}
+        disabled={Boolean(noteId && feltNotes[noteId])}
+        aria-label={`Felt note. Current count ${note?.feltCount ?? 0}`}
+      >
+        <SparkIcon />
+        <span>{note?.feltCount ?? 0}</span>
+      </button>
+    </div>
   );
 }
 
@@ -582,8 +656,6 @@ function NoteReader({
 }) {
   const { id } = useParams();
   const note = notes.find((item) => item._id === id);
-  const hasHearted = Boolean(id && heartedNotes[id]);
-  const hasFelt = Boolean(id && feltNotes[id]);
 
   if (isLoading) {
     return (
@@ -663,28 +735,253 @@ function NoteReader({
             {note.content}
           </p>
 
-          <div className="relative mt-10 grid max-w-full grid-cols-2 gap-3 border-t border-white/15 pt-5 sm:max-w-md">
-            <button
-              className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80 disabled:cursor-not-allowed disabled:opacity-55"
-              onClick={() => onHeart(note)}
-              disabled={hasHearted}
-              aria-label={`Heart note. Current count ${note.heartcount}`}
-            >
-              <HeartIcon />
-              <span>{note.heartcount}</span>
-            </button>
-            <button
-              className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 disabled:cursor-not-allowed disabled:opacity-55"
-              onClick={() => onFelt(note)}
-              disabled={hasFelt}
-              aria-label={`Felt note. Current count ${note.feltCount}`}
-            >
-              <SparkIcon />
-              <span>{note.feltCount}</span>
-            </button>
-          </div>
+          <NoteActionButtons
+            note={note}
+            onHeart={onHeart}
+            onFelt={onFelt}
+            heartedNotes={heartedNotes}
+            feltNotes={feltNotes}
+            className="mt-10 pt-5 sm:max-w-md"
+          />
         </div>
       </article>
+    </main>
+  );
+}
+
+function SimilarNoteResult({
+  notes,
+  onHeart,
+  onFelt,
+  heartedNotes,
+  feltNotes,
+  isLoadingNotes,
+}) {
+  const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [matchingNote, setMatchingNote] = useState(null);
+  const [isLoadingMatch, setIsLoadingMatch] = useState(true);
+  const [matchError, setMatchError] = useState("");
+  const submittedNote =
+    location.state?.submittedNote || notes.find((item) => item._id === id);
+  const hasCustomTagWithoutMatch =
+    submittedNote && !isPredefinedTag(submittedNote.tag) && !matchingNote;
+
+  useEffect(() => {
+    if (!submittedNote?._id) {
+      if (!isLoadingNotes) {
+        const missingNoteTimer = window.setTimeout(() => {
+          setIsLoadingMatch(false);
+        }, 0);
+        return () => window.clearTimeout(missingNoteTimer);
+      }
+      return;
+    }
+
+    let isCurrentRequest = true;
+
+    Promise.resolve().then(() => {
+      if (!isCurrentRequest) {
+        return;
+      }
+
+      setIsLoadingMatch(true);
+      setMatchError("");
+    });
+
+    api
+      .get("/notes", {
+        params: {
+          tag: getTagValue(submittedNote.tag),
+          limit: 1,
+          random: true,
+          excludeId: submittedNote._id,
+        },
+      })
+      .then(({ data }) => {
+        if (!isCurrentRequest) {
+          return;
+        }
+
+        setMatchingNote(Array.isArray(data) ? data[0] ?? null : null);
+      })
+      .catch((error) => {
+        if (!isCurrentRequest) {
+          return;
+        }
+
+        console.error("Error fetching related note:", error);
+        setMatchError("We posted your note, but could not load a matching note.");
+        setMatchingNote(null);
+      })
+      .finally(() => {
+        if (isCurrentRequest) {
+          setIsLoadingMatch(false);
+        }
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [isLoadingNotes, submittedNote?._id, submittedNote?.tag]);
+
+  useEffect(() => {
+    if (isLoadingMatch || matchError || !hasCustomTagWithoutMatch) {
+      return undefined;
+    }
+
+    const redirectTimer = window.setTimeout(() => {
+      navigate("/site", { replace: true });
+    }, 2800);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [hasCustomTagWithoutMatch, isLoadingMatch, matchError, navigate]);
+
+  if (isLoadingNotes || isLoadingMatch) {
+    return (
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-4 pt-24 pb-10 sm:px-6 lg:px-8">
+        <section className="glass-card max-w-xl rounded-[2rem] p-[1px] text-center">
+          <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-8">
+            <div className="loading-shimmer pointer-events-none absolute inset-0 opacity-60" />
+            <div className="relative">
+              <p className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+                finding a similar note
+              </p>
+              <h2 className="text-3xl font-black text-white">
+                Your note is posted. Looking for the closest wave.
+              </h2>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!submittedNote) {
+    return (
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-4 pt-24 pb-10 sm:px-6 lg:px-8">
+        <section className="glass-card max-w-xl rounded-[2rem] p-[1px] text-center">
+          <div className="glass-card-inner rounded-[1.95rem] p-8">
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-cyan-50/70">
+              note not found
+            </p>
+            <h2 className="text-3xl font-black text-white">
+              This posted note could not be opened here.
+            </h2>
+            <Link
+              to="/site"
+              className="glass-action mx-auto mt-6 w-fit px-6 text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+            >
+              Back to Notes
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative z-10 min-h-screen w-full max-w-full px-3 pt-24 pb-10 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-[0.92fr_1.08fr]">
+        <section className="min-w-0 max-w-xl">
+          <p className="mb-3 w-fit rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-cyan-50/85 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
+            your note is in the wave
+          </p>
+          <h2 className="break-words text-[clamp(2rem,8vw,4.2rem)] font-black leading-[0.98] tracking-[-0.05em] text-white drop-shadow-[0_16px_35px_rgba(2,6,23,0.35)]">
+            {matchingNote
+              ? "Someone else left something under this feeling too."
+              : "No matching notes found for this tag yet."}
+          </h2>
+          <p className="mt-5 text-base font-medium leading-7 text-slate-100/75 sm:leading-8">
+            {matchingNote
+              ? "Your note was posted. Here's one other message from the same tag, chosen at random, without showing your own back to you."
+              : hasCustomTagWithoutMatch
+                ? "Your custom tag is new here. We'll take you back to the notes in a moment."
+                : "Your note was posted, but this tag does not have another matching note yet."}
+          </p>
+        </section>
+
+        <section className="glass-card min-w-0 rounded-[2rem] p-[1px]">
+          <div className="glass-card-inner relative overflow-hidden rounded-[1.95rem] p-5 sm:p-7">
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white/80 to-transparent opacity-70" />
+            <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
+
+            <p className="relative rounded-2xl border border-emerald-200/25 bg-emerald-500/15 px-4 py-3 text-sm font-semibold text-emerald-50">
+              Wish added successfully.
+            </p>
+
+            <div className="relative mt-5 flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-cyan-100/25 bg-cyan-100/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-50 shadow-inner shadow-white/10">
+                {submittedNote.tag}
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-100/60">
+                Random note from the same tag
+              </span>
+            </div>
+
+            {matchError && (
+              <p className="relative mt-4 rounded-2xl border border-rose-200/25 bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-50">
+                {matchError}
+              </p>
+            )}
+
+            {matchingNote ? (
+              <article className="relative mt-5 rounded-[1.6rem] border border-white/15 bg-slate-950/25 p-5 shadow-inner shadow-black/15 backdrop-blur-xl">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <span className="rounded-full border border-cyan-100/25 bg-cyan-100/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-cyan-50 shadow-inner shadow-white/10">
+                    {matchingNote.tag}
+                  </span>
+                  <time
+                    className="text-xs font-medium text-slate-100/65"
+                    dateTime={matchingNote.createdAt}
+                  >
+                    {new Date(matchingNote.createdAt).toLocaleDateString(
+                      undefined,
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }
+                    )}
+                  </time>
+                </div>
+                <p className="whitespace-pre-wrap break-words text-base font-bold leading-7 text-white/95 sm:text-lg sm:leading-relaxed">
+                  {matchingNote.content}
+                </p>
+                <NoteActionButtons
+                  note={matchingNote}
+                  onHeart={onHeart}
+                  onFelt={onFelt}
+                  heartedNotes={heartedNotes}
+                  feltNotes={feltNotes}
+                  onUpdated={setMatchingNote}
+                  className="mt-6"
+                />
+              </article>
+            ) : (
+              <div className="relative mt-5 rounded-[1.6rem] border border-white/15 bg-slate-950/25 px-5 py-6 text-sm font-semibold leading-7 text-slate-100/78 shadow-inner shadow-black/15 backdrop-blur-xl">
+                No matching notes found.
+              </div>
+            )}
+
+            <div className="relative mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to="/wish"
+                className="glass-action flex-1 text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80"
+              >
+                write another note
+              </Link>
+              <Link
+                to="/site"
+                className="glass-action flex-1 text-white/90 hover:border-white/40 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                view all notes
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
@@ -719,9 +1016,8 @@ function App() {
   }, [feltNotes]);
 
   useEffect(() => {
-    setIsLoadingNotes(true);
-    axios
-      .get("https://nami-production-35f9.up.railway.app/notes")
+    api
+      .get("/notes")
       .then((response) => setNote(response.data))
       .catch((error) => console.error("Error fetching notes:", error))
       .finally(() => setIsLoadingNotes(false));
@@ -743,7 +1039,11 @@ function App() {
   }, [currentBackgrounds.length, location.pathname]);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    const id = window.setTimeout(() => {
+      setIsMobileMenuOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(id);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -783,47 +1083,51 @@ function App() {
   
   const handleFeltCount = async (note) => {
     if (!note?._id || feltNotes[note._id]) {
-      return;
+      return null;
     }
 
     if ((note.feltCount ?? 0) < 0) {
-      return;
+      return null;
     }
 
     try {
-      const { data } = await axios.patch(
-        `https://nami-production-35f9.up.railway.app/notes/${note._id}/felt`,
+      const { data } = await api.patch(
+        `/notes/${note._id}/felt`,
         { type: "like" }
       );
       setFeltNotes((prev) => ({ ...prev, [note._id]: true }));
       setNote((prevNotes) =>
         prevNotes.map((item) => (item._id === note._id ? data : item))
       );
+      return data;
     } catch (error) {
       console.error("Error updating felt count:", error);
+      return null;
     }
   };
 
   const handleHeartCount = async (note) => {
     if (!note?._id || heartedNotes[note._id]) {
-      return;
+      return null;
     }
 
     if ((note.heartcount ?? 0) < 0) {
-      return;
+      return null;
     }
 
     try {
-      const { data } = await axios.patch(
-        `https://nami-production-35f9.up.railway.app/notes/${note._id}/heart`,
+      const { data } = await api.patch(
+        `/notes/${note._id}/heart`,
         { type: "like" }
       );
       setHeartedNotes((prev) => ({ ...prev, [note._id]: true }));
       setNote((prevNotes) =>
         prevNotes.map((item) => (item._id === note._id ? data : item))
       );
+      return data;
     } catch (error) {
       console.error("Error updating heart count:", error);
+      return null;
     }
   };
 
@@ -1101,32 +1405,14 @@ function App() {
                             </p>
                           </div>
 
-                          <div className="relative mt-6 grid grid-cols-2 gap-3 border-t border-white/15 pt-4">
-                            <button
-                              className="glass-action text-rose-50 hover:border-rose-100/45 hover:bg-rose-400/25 focus:outline-none focus:ring-2 focus:ring-rose-100/80 disabled:cursor-not-allowed disabled:opacity-55"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleHeartCount(note);
-                              }}
-                              disabled={Boolean(heartedNotes[note._id])}
-                              aria-label={`Heart note. Current count ${note.heartcount}`}
-                            >
-                              <HeartIcon />
-                              <span>{note.heartcount}</span>
-                            </button>
-                            <button
-                              className="glass-action text-cyan-50 hover:border-cyan-100/45 hover:bg-cyan-300/25 focus:outline-none focus:ring-2 focus:ring-cyan-100/80 disabled:cursor-not-allowed disabled:opacity-55"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleFeltCount(note);
-                              }}
-                              disabled={Boolean(feltNotes[note._id])}
-                              aria-label={`Felt note. Current count ${note.feltCount}`}
-                            >
-                              <SparkIcon />
-                              <span>{note.feltCount}</span>
-                            </button>
-                          </div>
+                          <NoteActionButtons
+                            note={note}
+                            onHeart={handleHeartCount}
+                            onFelt={handleFeltCount}
+                            heartedNotes={heartedNotes}
+                            feltNotes={feltNotes}
+                            className="mt-6"
+                          />
                         </div>
                       </article>
                     ))}
@@ -1156,6 +1442,19 @@ function App() {
               heartedNotes={heartedNotes}
               feltNotes={feltNotes}
               isLoading={isLoadingNotes}
+            />
+          }
+        />
+        <Route
+          path="/wish/:id/similar"
+          element={
+            <SimilarNoteResult
+              notes={Note}
+              onHeart={handleHeartCount}
+              onFelt={handleFeltCount}
+              heartedNotes={heartedNotes}
+              feltNotes={feltNotes}
+              isLoadingNotes={isLoadingNotes}
             />
           }
         />
