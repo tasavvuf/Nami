@@ -1245,6 +1245,17 @@ function App() {
               </NavLink>
             </nav>
 
+            {/* Status link - subtle, compact, links to uptime page */}
+            <a
+              href="https://stats.uptimerobot.com/WfCvvs2rHR"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-200 bg-white/5 border border-white/10 hover:bg-white/10 md:flex"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.45)]" aria-hidden />
+              <span className="text-xs leading-none">All systems operational</span>
+            </a>
+
             <button
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-cyan-200/80 md:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -1326,6 +1337,15 @@ function App() {
                 >
                   Updates
                 </NavLink>
+                <a
+                  href="https://stats.uptimerobot.com/WfCvvs2rHR"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-lg px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                >
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.45)]" aria-hidden />
+                  <span className="text-sm">All systems operational</span>
+                </a>
               </div>
             </nav>
           )}
